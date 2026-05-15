@@ -1,0 +1,57 @@
+# configs/sevit_base.yaml
+# ─────────────────────────────────────────────────────────────
+# SE-ViT training configuration
+# Reproduces: Chen et al. (2025) JMIAI 12(3), §4.5
+# Expected: Accuracy 91.2±0.9%, AUC-ROC 0.954, ECE 0.034
+# ─────────────────────────────────────────────────────────────
+
+model:
+  backbone:     vit_base_patch16_224
+  pretrained:   imagenet21k
+  img_size:     224
+  patch_size:   16
+  in_channels:  1         # grayscale MRI
+  embed_dim:    768
+  depth:        12
+  num_heads:    12
+  mlp_ratio:    4.0
+  dropout:      0.1
+  num_classes:  4         # CN / EMCI / LMCI / AD
+  num_concepts: 512
+  temperature:  1.42      # post-hoc calibration τ (fitted on val set)
+
+training:
+  seed:         42
+  epochs:       100
+  batch_size:   32
+  optimizer:    adamw
+  lr:           1.0e-4
+  weight_decay: 0.01
+  scheduler:    cosine
+  warmup_epochs: 10
+  mixed_precision: true   # FP16
+  gradient_clip:   1.0
+  loss_weights:
+    ce:          1.0
+    concept:     0.3
+    calibration: 0.05
+  label_smoothing: 0.1
+
+data:
+  img_size:    224
+  num_slices:  48
+  train_split: 0.70
+  val_split:   0.15
+  test_split:  0.15
+  classes:     [CN, EMCI, LMCI, AD]
+  class_map:   {CN: 0, EMCI: 1, LMCI: 2, AD: 3}
+
+hardware:
+  gpus:         4
+  gpu_model:    "NVIDIA A100 40GB"
+  cuda_version: "12.1"
+  framework:    "PyTorch 2.1"
+
+logging:
+  log_every:    20        # batches
+  save_best:    val_acc
